@@ -1,0 +1,85 @@
+<UserControl x:Class="YtTikDownloader.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:YtTikDownloader.App.Converters">
+
+    <UserControl.Resources>
+        <conv:InverseBooleanConverter x:Key="InverseBoolean"/>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16" MaxWidth="700" HorizontalAlignment="Left">
+
+            <TextBlock Text="Download folders" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
+
+            <TextBlock Text="YouTube"/>
+            <Grid Margin="0,2,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" Text="{Binding YouTubeOutputFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Margin="6,0,0,0" Padding="10,2" Command="{Binding BrowseYouTubeFolderCommand}"/>
+            </Grid>
+
+            <TextBlock Text="TikTok"/>
+            <Grid Margin="0,2,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" Text="{Binding TikTokOutputFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Margin="6,0,0,0" Padding="10,2" Command="{Binding BrowseTikTokFolderCommand}"/>
+            </Grid>
+
+            <TextBlock Text="YouTube Music"/>
+            <Grid Margin="0,2,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" Text="{Binding YouTubeMusicOutputFolder, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Margin="6,0,0,0" Padding="10,2" Command="{Binding BrowseYouTubeMusicFolderCommand}"/>
+            </Grid>
+
+            <Separator Margin="0,10"/>
+
+            <TextBlock Text="Downloading" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Max concurrent downloads:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{Binding ConcurrencyOptions}" SelectedItem="{Binding MaxConcurrentDownloads}" Width="80"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Preferred audio quality:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{Binding AudioQualityOptions}" DisplayMemberPath="Label"
+                          SelectedValuePath="Value" SelectedValue="{Binding PreferredAudioQuality}" Width="140"/>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Preferred max video resolution:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox ItemsSource="{Binding VideoResolutionOptions}" SelectedItem="{Binding PreferredVideoResolution}" Width="100"/>
+            </StackPanel>
+
+            <Separator Margin="0,10"/>
+
+            <TextBlock Text="Clipboard detection" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
+            <CheckBox Content="Watch clipboard for YouTube/TikTok/YouTube Music links" IsChecked="{Binding ClipboardDetectionEnabled}" Margin="0,0,0,6"/>
+            <CheckBox Content="Automatically queue detected links (skips the confirmation banner)" IsChecked="{Binding AutoQueueClipboardUrls}" Margin="0,0,0,10"/>
+
+            <Separator Margin="0,10"/>
+
+            <TextBlock Text="yt-dlp / ffmpeg" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
+            <TextBlock Text="{Binding YtDlpStatusText}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+            <TextBlock Text="{Binding FfmpegStatusText}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Download/Update tools" Padding="12,4" Command="{Binding DownloadOrUpdateToolsCommand}"
+                        IsEnabled="{Binding IsUpdatingTools, Converter={StaticResource InverseBoolean}}"/>
+                <Button Content="Refresh status" Margin="8,0,0,0" Padding="12,4" Command="{Binding RefreshToolStatusCommand}"/>
+            </StackPanel>
+            <TextBlock Text="{Binding ToolsUpdateMessage}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="#FF2E7D32"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

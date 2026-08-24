@@ -1,0 +1,152 @@
+<UserControl x:Class="YtTikDownloader.App.Views.CategoryTabView"
+             x:Name="RootControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:YtTikDownloader.App.Converters"
+             xmlns:models="clr-namespace:YtTikDownloader.Core.Models;assembly=YtTikDownloader.Core"
+             AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver">
+
+    <UserControl.Resources>
+        <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- URL input -->
+        <Border Grid.Row="0" BorderBrush="#FFCCCCCC" BorderThickness="1" Padding="8" CornerRadius="4" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
+                         Text="{Binding UrlInputText, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         Height="56"
+                         ToolTip="Paste one or more URLs (one per line), or drag &amp; drop links here."/>
+                <Button Grid.Column="1" Content="Add to Queue" Margin="8,0,0,0" Padding="14,4"
+                        VerticalAlignment="Center"
+                        Command="{Binding AddUrlCommand}"/>
+            </Grid>
+        </Border>
+
+        <!-- Options -->
+        <Expander Grid.Row="1" Header="Download options" IsExpanded="True" Margin="0,0,0,8">
+            <WrapPanel Margin="4">
+                <GroupBox Header="Format" Margin="0,4,16,4" Padding="6">
+                    <StackPanel>
+                        <RadioButton Content="Video (MP4)" IsChecked="{Binding IsMp4Selected}" Margin="2"/>
+                        <RadioButton Content="Audio only (MP3)" IsChecked="{Binding IsMp3Selected}" Margin="2"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Thumbnail &amp; metadata" Margin="0,4,16,4" Padding="6">
+                    <StackPanel>
+                        <CheckBox Content="Save thumbnail image file" IsChecked="{Binding WriteThumbnail}" Margin="2"/>
+                        <CheckBox Content="Embed thumbnail / cover art in file" IsChecked="{Binding EmbedThumbnail}" Margin="2"/>
+                        <CheckBox Content="Embed title/artist metadata tags" IsChecked="{Binding EmbedMetadata}" Margin="2"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="Playlist / album" Margin="0,4,16,4" Padding="6">
+                    <StackPanel>
+                        <CheckBox Content="Download entire playlist/album" IsChecked="{Binding DownloadEntirePlaylist}" Margin="2"/>
+                        <StackPanel Orientation="Horizontal" Margin="2">
+                            <TextBlock Text="Items (e.g. 1-10):" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBox Text="{Binding PlaylistItemsText, UpdateSourceTrigger=PropertyChanged}" Width="90"
+                                     IsEnabled="{Binding DownloadEntirePlaylist}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="SponsorBlock" Margin="0,4,16,4" Padding="6"
+                          Visibility="{Binding ShowSponsorBlockUi, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <CheckBox Content="Remove sponsored/promo segments" IsChecked="{Binding SponsorBlockEnabled}" Margin="2"/>
+                        <ItemsControl ItemsSource="{Binding SponsorBlockOptions}"
+                                      IsEnabled="{Binding SponsorBlockEnabled}"
+                                      Margin="16,0,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsChecked}" Margin="2"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </GroupBox>
+            </WrapPanel>
+        </Expander>
+
+        <!-- Queue -->
+        <Border Grid.Row="2" BorderBrush="#FFCCCCCC" BorderThickness="1" CornerRadius="4">
+            <ListBox ItemsSource="{Binding FilteredQueue}" BorderThickness="0" Padding="4">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:DownloadTask}">
+                        <Border BorderBrush="#FFE0E0E0" BorderThickness="0,0,0,1" Padding="6" Margin="0,2">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" FontWeight="Bold"
+                                           Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+
+                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="Play" Margin="4,0,0,0" Padding="8,2"
+                                            Visibility="{Binding HasResultFiles, Converter={StaticResource BoolToVisibility}}"
+                                            Command="{Binding DataContext.PlayCommand, ElementName=RootControl}"
+                                            CommandParameter="{Binding}"/>
+                                    <Button Content="Open folder" Margin="4,0,0,0" Padding="8,2"
+                                            Visibility="{Binding HasResultFiles, Converter={StaticResource BoolToVisibility}}"
+                                            Command="{Binding DataContext.OpenFolderCommand, ElementName=RootControl}"
+                                            CommandParameter="{Binding}"/>
+                                    <Button Content="Cancel" Margin="4,0,0,0" Padding="8,2"
+                                            Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}"
+                                            Command="{Binding DataContext.CancelDownloadCommand, ElementName=RootControl}"
+                                            CommandParameter="{Binding}"/>
+                                    <Button Content="Remove" Margin="4,0,0,0" Padding="8,2"
+                                            Command="{Binding DataContext.RemoveDownloadCommand, ElementName=RootControl}"
+                                            CommandParameter="{Binding}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="{Binding Status}" Margin="0,0,10,0" FontStyle="Italic"/>
+                                    <TextBlock Text="{Binding CurrentItemLabel}" Margin="0,0,10,0"
+                                               Visibility="{Binding CurrentItemLabel, Converter={StaticResource NullToVisibility}}"/>
+                                    <TextBlock Text="{Binding SpeedText}" Margin="0,0,10,0"
+                                               Visibility="{Binding SpeedText, Converter={StaticResource NullToVisibility}}"/>
+                                    <TextBlock Margin="0,0,10,0"
+                                                Visibility="{Binding EtaText, Converter={StaticResource NullToVisibility}}">
+                                        <Run Text="ETA "/><Run Text="{Binding EtaText, Mode=OneWay}"/>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Height="14"
+                                             Minimum="0" Maximum="100" Value="{Binding ProgressPercent, Mode=OneWay}"/>
+
+                                <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="0,4,0,0" Foreground="Red"
+                                           TextWrapping="Wrap"
+                                           Text="{Binding ErrorMessage}"
+                                           Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+    </Grid>
+</UserControl>

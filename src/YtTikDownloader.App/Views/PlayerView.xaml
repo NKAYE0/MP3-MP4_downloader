@@ -1,0 +1,21 @@
+<UserControl x:Class="YtTikDownloader.App.Views.PlayerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <DockPanel Margin="16">
+        <TextBlock x:Name="NowPlayingText" DockPanel.Dock="Top" Text="Nothing loaded yet."
+                   FontWeight="Bold" Margin="0,0,0,10" TextTrimming="CharacterEllipsis"/>
+
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <Button x:Name="PlayButton" Content="Play" Width="70" Padding="6,4" Margin="4" Click="OnPlayClick"/>
+            <Button x:Name="PauseButton" Content="Pause" Width="70" Padding="6,4" Margin="4" Click="OnPauseClick"/>
+            <Button x:Name="StopButton" Content="Stop" Width="70" Padding="6,4" Margin="4" Click="OnStopClick"/>
+            <TextBlock Text="Volume" VerticalAlignment="Center" Margin="16,0,4,0"/>
+            <Slider x:Name="VolumeSlider" Width="120" Minimum="0" Maximum="1" Value="0.7" VerticalAlignment="Center"
+                    ValueChanged="OnVolumeChanged"/>
+        </StackPanel>
+
+        <MediaElement x:Name="Player" LoadedBehavior="Manual" UnloadedBehavior="Manual"
+                      Stretch="Uniform" Volume="0.7"/>
+    </DockPanel>
+</UserControl>

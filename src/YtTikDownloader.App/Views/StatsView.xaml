@@ -1,0 +1,77 @@
+<UserControl x:Class="YtTikDownloader.App.Views.StatsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <Style TargetType="TextBlock" x:Key="StatLabel">
+            <Setter Property="Margin" Value="0,0,10,10"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#FF555555"/>
+        </Style>
+        <Style TargetType="TextBlock" x:Key="StatValue">
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel Margin="16">
+        <Button DockPanel.Dock="Top" HorizontalAlignment="Right" Content="Refresh" Padding="12,4" Margin="0,0,0,12"
+                Command="{Binding RefreshCommand}"/>
+
+        <UniformGrid Columns="4" DockPanel.Dock="Top">
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="Total downloads" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding TotalDownloads}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="Successful" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding SuccessfulDownloads}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="Failed" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding FailedDownloads}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="Total size on disk" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding TotalSizeText}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+        </UniformGrid>
+
+        <TextBlock DockPanel.Dock="Top" Text="By category" FontWeight="SemiBold" Margin="0,10,0,6"/>
+        <UniformGrid Columns="3" DockPanel.Dock="Top">
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="YouTube" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding YouTubeCount}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="TikTok" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding TikTokCount}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="YouTube Music" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding YouTubeMusicCount}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+        </UniformGrid>
+
+        <TextBlock DockPanel.Dock="Top" Text="By format" FontWeight="SemiBold" Margin="0,10,0,6"/>
+        <UniformGrid Columns="4" DockPanel.Dock="Top">
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="Video (MP4)" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding VideoDownloads}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="Audio (MP3)" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding AudioDownloads}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="SponsorBlock applied" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding SponsorBlockAppliedCount}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+            <StackPanel Margin="0,0,20,0">
+                <TextBlock Text="Last 30 days" Style="{StaticResource StatLabel}"/>
+                <TextBlock Text="{Binding Last30DaysTotal}" Style="{StaticResource StatValue}"/>
+            </StackPanel>
+        </UniformGrid>
+    </DockPanel>
+</UserControl>
