@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows.Input;
 using YtTikDownloader.App.Services;
 using YtTikDownloader.Core.Models;
@@ -72,11 +73,9 @@ public sealed class MainViewModel : ViewModelBase
         // references both (only ever invoked later, once a download
         // finishes, but declaring it before they're assigned would leave
         // the compiler unable to prove they're non-null at that point).
-        QueueManager.TaskFinished += (_, entry) =>
+        QueueManager.TaskFinished += (_, entries) =>
         {
-            StatusMessage = entry.Success
-                ? $"Finished: {entry.Title}"
-                : $"Failed: {entry.Title} — {entry.ErrorMessage}";
+            StatusMessage = BuildFinishedStatusMessage(entries);
             HistoryVm.Refresh();
             StatsVm.Refresh();
         };
@@ -96,6 +95,29 @@ public sealed class MainViewModel : ViewModelBase
             PendingClipboardUrl = null;
             _pendingClipboardClassified = null;
         });
+    }
+
+    /// <summary>
+    /// A playlist/album download now finishes with one HistoryEntry per
+    /// track rather than one entry for the whole batch, so the status bar
+    /// message has to summarize the group instead of just naming a single
+    /// entry.
+    /// </summary>
+    private static string BuildFinishedStatusMessage(IReadOnlyList<HistoryEntry> entries)
+    {
+        if (entries.Count == 0) return "Finished.";
+
+        if (entries.Count == 1)
+        {
+            var entry = entries[0];
+            return entry.Success
+                ? $"Finished: {entry.Title}"
+                : $"Failed: {entry.Title} — {entry.ErrorMessage}";
+        }
+
+        var succeeded = entries.Count(e => e.Success);
+        var groupTitle = entries[0].PlaylistTitle ?? entries[0].Title;
+        return $"Finished: {groupTitle} ({succeeded}/{entries.Count} tracks)";
     }
 
     public void RequestPlay(string filePath) => PlayRequested?.Invoke(filePath);

@@ -29,7 +29,8 @@
                   IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                   SelectionMode="Single" GridLinesVisibility="Horizontal">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="3*"/>
+                <DataGridTextColumn Header="Title" Binding="{Binding Title}" Width="2.4*"/>
+                <DataGridTextColumn Header="Playlist / album" Binding="{Binding PlaylistLabel}" Width="1.8*"/>
                 <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="*"/>
                 <DataGridTextColumn Header="Format" Binding="{Binding Format}" Width="*"/>
                 <DataGridTextColumn Header="Downloaded" Binding="{Binding DownloadedAtUtc, StringFormat='{}{0:g}'}" Width="1.4*"/>

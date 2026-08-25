@@ -110,9 +110,13 @@ public static class YtDlpArgumentBuilder
         args.Add("-o");
         args.Add(outputTemplate);
 
-        // Live metadata for the queue UI (title, thumbnail URL, playlist position).
+        // Live metadata for the queue UI (title, thumbnail URL, playlist
+        // position) -- and also for History/Stats, which use the playlist
+        // index/total/title fields to record each track of a playlist or
+        // album as its own history entry while still knowing which batch
+        // it belongs to (see YtDlpDownloadEngine).
         args.Add("--print");
-        args.Add($"before_dl:{MetaMarker}%(title)s|%(thumbnail)s|%(playlist_index|)s|%(n_entries|)s");
+        args.Add($"before_dl:{MetaMarker}%(title)s|%(thumbnail)s|%(playlist_index|)s|%(n_entries|)s|%(playlist_title|)s");
 
         // Final on-disk path of each file once yt-dlp is done moving/naming it.
         args.Add("--print");

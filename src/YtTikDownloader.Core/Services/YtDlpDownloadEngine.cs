@@ -7,8 +7,10 @@ namespace YtTikDownloader.Core.Services;
 
 /// <summary>
 /// Runs one yt-dlp process for a DownloadTask, streaming progress back
-/// onto the task's own bindable properties as it goes, and returns a
-/// HistoryEntry describing the outcome once the process exits.
+/// onto the task's own bindable properties as it goes, and returns one
+/// HistoryEntry per file once the process exits -- a playlist/album
+/// download yields several files from a single process, and each gets its
+/// own entry so History/Stats can treat them individually.
 /// </summary>
 public sealed class YtDlpDownloadEngine
 {
@@ -23,7 +25,7 @@ public sealed class YtDlpDownloadEngine
         _binaryManager = binaryManager;
     }
 
-    public async Task<HistoryEntry> RunAsync(DownloadTask task, SynchronizationContext? uiContext, string preferredAudioQuality, string preferredVideoResolution)
+    public async Task<List<HistoryEntry>> RunAsync(DownloadTask task, SynchronizationContext? uiContext, string preferredAudioQuality, string preferredVideoResolution)
     {
         var ytDlpPath = _binaryManager.ResolveYtDlpPath();
         if (ytDlpPath is null)
@@ -33,7 +35,7 @@ public sealed class YtDlpDownloadEngine
                 task.Status = DownloadStatus.Failed;
                 task.ErrorMessage = "yt-dlp.exe was not found. Go to Settings and click \"Download/Update tools\" first.";
             });
-            return FailedEntry(task);
+            return new List<HistoryEntry> { FailedEntry(task) };
         }
 
         var ffmpegPath = _binaryManager.ResolveFfmpegPath();
@@ -65,7 +67,8 @@ public sealed class YtDlpDownloadEngine
 
         using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
 
-        var resultPaths = new List<string>();
+        var resultItems = new List<DownloadedItem>();
+        var pendingMeta = new PendingItemMeta();
         var stderrLines = new List<string>();
         var ct = task.CancellationSource.Token;
         var itemsSeen = 0;
@@ -86,7 +89,7 @@ public sealed class YtDlpDownloadEngine
             // than rendering each one live. Marshaling each line's update
             // onto the UI thread as it arrives is what makes the bar move
             // smoothly again.
-            RunOnUi(uiContext, () => HandleStdOutLine(line, task, resultPaths, ref itemsSeen));
+            RunOnUi(uiContext, () => HandleStdOutLine(line, task, resultItems, pendingMeta, ref itemsSeen));
         };
         process.ErrorDataReceived += (_, e) =>
         {
@@ -125,16 +128,16 @@ public sealed class YtDlpDownloadEngine
                 task.Status = DownloadStatus.Failed;
                 task.ErrorMessage = $"Failed to run yt-dlp: {ex.Message}";
             });
-            return FailedEntry(task);
+            return new List<HistoryEntry> { FailedEntry(task) };
         }
 
         if (ct.IsCancellationRequested)
         {
             RunOnUi(uiContext, () => task.Status = DownloadStatus.Canceled);
-            return FailedEntry(task, "Canceled by user.");
+            return new List<HistoryEntry> { FailedEntry(task, "Canceled by user.") };
         }
 
-        if (process.ExitCode != 0 && resultPaths.Count == 0)
+        if (process.ExitCode != 0 && resultItems.Count == 0)
         {
             var tail = string.Join(Environment.NewLine, stderrLines.TakeLast(5));
             RunOnUi(uiContext, () =>
@@ -144,58 +147,101 @@ public sealed class YtDlpDownloadEngine
                     ? $"yt-dlp exited with code {process.ExitCode}."
                     : tail;
             });
-            return FailedEntry(task);
+            return new List<HistoryEntry> { FailedEntry(task) };
         }
 
         RunOnUi(uiContext, () =>
         {
-            foreach (var p in resultPaths) task.ResultFilePaths.Add(p);
+            foreach (var item in resultItems) task.ResultFilePaths.Add(item.FilePath);
             task.ProgressPercent = 100;
             task.Status = DownloadStatus.Completed; // set last so HasResultFiles (re-announced on Status change) sees the populated list
         });
 
-        long totalBytes = 0;
-        foreach (var p in resultPaths)
+        // A playlist/album produces one HistoryEntry per track (instead of
+        // one entry for the whole download) so each file shows up, and
+        // counts toward Stats, on its own -- but only when more than one
+        // file actually came out of this download; a lone item isn't a
+        // "batch" of one. PlaylistGroupId ties same-batch entries together
+        // so History can still show they were downloaded together.
+        var groupId = resultItems.Count > 1 ? Guid.NewGuid().ToString("N") : null;
+
+        var entries = new List<HistoryEntry>();
+        foreach (var item in resultItems)
         {
-            try { if (File.Exists(p)) totalBytes += new FileInfo(p).Length; }
+            long size = 0;
+            try { if (File.Exists(item.FilePath)) size = new FileInfo(item.FilePath).Length; }
             catch (IOException) { }
+
+            entries.Add(new HistoryEntry
+            {
+                Title = string.IsNullOrWhiteSpace(item.Title) ? Path.GetFileNameWithoutExtension(item.FilePath) : item.Title,
+                Url = task.Request.Url,
+                Category = task.Request.Category,
+                Format = task.Request.Format,
+                Success = true,
+                FilePaths = new List<string> { item.FilePath },
+                TotalFileSizeBytes = size,
+                SponsorBlockApplied = task.Request.SponsorBlockRemoveCategories.Count > 0,
+                PlaylistGroupId = groupId,
+                PlaylistTitle = item.PlaylistTitle,
+                PlaylistIndex = item.PlaylistIndex,
+                PlaylistTotalCount = item.PlaylistTotal
+            });
         }
 
-        return new HistoryEntry
-        {
-            Title = string.IsNullOrWhiteSpace(task.Title) ? task.Request.Url : task.Title,
-            Url = task.Request.Url,
-            Category = task.Request.Category,
-            Format = task.Request.Format,
-            Success = true,
-            FilePaths = resultPaths,
-            TotalFileSizeBytes = totalBytes,
-            SponsorBlockApplied = task.Request.SponsorBlockRemoveCategories.Count > 0
-        };
+        return entries;
     }
 
-    private static void HandleStdOutLine(string line, DownloadTask task, List<string> resultPaths, ref int itemsSeen)
+    /// <summary>One file's --print metadata, captured as it arrives so it can be paired up with its DoneMarker line below.</summary>
+    private sealed class PendingItemMeta
+    {
+        public string? Title;
+        public int? PlaylistIndex;
+        public int? PlaylistTotal;
+        public string? PlaylistTitle;
+    }
+
+    /// <summary>One finished file plus whatever playlist/album metadata was seen for it just before it was downloaded.</summary>
+    private readonly record struct DownloadedItem(string FilePath, string Title, int? PlaylistIndex, int? PlaylistTotal, string? PlaylistTitle);
+
+    private static void HandleStdOutLine(string line, DownloadTask task, List<DownloadedItem> resultItems, PendingItemMeta pending, ref int itemsSeen)
     {
         if (line.StartsWith(YtDlpArgumentBuilder.MetaMarker, StringComparison.Ordinal))
         {
             var payload = line[YtDlpArgumentBuilder.MetaMarker.Length..];
             var parts = payload.Split('|');
             var title = parts.Length > 0 ? parts[0] : task.Title;
-            var index = parts.Length > 2 ? parts[2] : string.Empty;
-            var total = parts.Length > 3 ? parts[3] : string.Empty;
+            var indexText = parts.Length > 2 ? parts[2] : string.Empty;
+            var totalText = parts.Length > 3 ? parts[3] : string.Empty;
+            var playlistTitle = parts.Length > 4 ? parts[4] : string.Empty;
+            var index = int.TryParse(indexText, out var idx) ? idx : (int?)null;
+            var total = int.TryParse(totalText, out var tot) ? tot : (int?)null;
 
             if (!string.IsNullOrWhiteSpace(title)) task.Title = title;
             task.Status = DownloadStatus.Downloading;
-            task.CurrentItemLabel = (!string.IsNullOrWhiteSpace(index) && !string.IsNullOrWhiteSpace(total))
+            task.CurrentItemLabel = (index is not null && total is not null)
                 ? $"Item {index} of {total}"
                 : null;
+
+            pending.Title = string.IsNullOrWhiteSpace(title) ? task.Title : title;
+            pending.PlaylistIndex = index;
+            pending.PlaylistTotal = total;
+            pending.PlaylistTitle = string.IsNullOrWhiteSpace(playlistTitle) ? null : playlistTitle;
             return;
         }
 
         if (line.StartsWith(YtDlpArgumentBuilder.DoneMarker, StringComparison.Ordinal))
         {
             var path = line[YtDlpArgumentBuilder.DoneMarker.Length..].Trim();
-            if (!string.IsNullOrWhiteSpace(path)) resultPaths.Add(path);
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                resultItems.Add(new DownloadedItem(
+                    path,
+                    string.IsNullOrWhiteSpace(pending.Title) ? task.Title : pending.Title,
+                    pending.PlaylistIndex,
+                    pending.PlaylistTotal,
+                    pending.PlaylistTitle));
+            }
             itemsSeen++;
             task.ProgressPercent = 0; // reset for next item in a playlist
             return;

@@ -20,7 +20,7 @@ public sealed class DownloadQueueManager
 
     public ObservableCollection<DownloadTask> Queue { get; } = new();
 
-    public event Action<DownloadTask, HistoryEntry>? TaskFinished;
+    public event Action<DownloadTask, IReadOnlyList<HistoryEntry>>? TaskFinished;
 
     public DownloadQueueManager(YtDlpDownloadEngine engine, HistoryRepository history, SettingsService settings)
     {
@@ -84,13 +84,13 @@ public sealed class DownloadQueueManager
 
         try
         {
-            var entry = await _engine.RunAsync(
+            var entries = await _engine.RunAsync(
                 task,
                 uiContext,
                 _settings.Current.PreferredAudioQuality,
                 _settings.Current.PreferredVideoResolution).ConfigureAwait(false);
 
-            _history.Add(entry);
+            foreach (var entry in entries) _history.Add(entry);
 
             // TaskFinished's subscribers (MainViewModel) touch UI-bound
             // state -- including ObservableCollections on the History and
@@ -98,8 +98,8 @@ public sealed class DownloadQueueManager
             // thread -- so this has to be marshaled just like the engine's
             // own progress updates rather than invoked from whatever
             // background thread the download just finished on.
-            if (uiContext is null) TaskFinished?.Invoke(task, entry);
-            else uiContext.Post(_ => TaskFinished?.Invoke(task, entry), null);
+            if (uiContext is null) TaskFinished?.Invoke(task, entries);
+            else uiContext.Post(_ => TaskFinished?.Invoke(task, entries), null);
         }
         finally
         {
