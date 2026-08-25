@@ -6,9 +6,30 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!-- WPF has no built-in color-picker dialog (Microsoft.Win32 only has
+         file/folder pickers). System.Windows.Forms.ColorDialog is the
+         standard, zero-extra-dependency way to get a real "pick any color"
+         dialog with a hue/saturation/luminosity picker; it ships as part
+         of the .NET Windows Desktop runtime, not a NuGet package, and WPF
+         plus WinForms are explicitly supported side by side in the same
+         project via these two Use* flags. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>YtTikDownloader</AssemblyName>
     <RootNamespace>YtTikDownloader.App</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWindowsForms adds its own implicit global usings (System.Windows.Forms,
+         System.Drawing) on top of WPF's, and a lot of common type names exist
+         in both toolkits (UserControl, DragEventArgs, Color, and more), which
+         made every one of those names ambiguous project-wide, not just in the
+         one file that actually needs the WinForms color picker. Removing
+         those two here restores unqualified WPF names everywhere else; the
+         one place that needs the WinForms types (SettingsViewModel's color
+         picker) already refers to them by their full names, so it's unaffected. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\YtTikDownloader.Core\YtTikDownloader.Core.csproj" />

@@ -2,6 +2,7 @@ using System.IO;
 using System.Net.Http;
 using System.Windows.Input;
 using Microsoft.Win32;
+using YtTikDownloader.App.Services;
 using YtTikDownloader.Core.Services;
 
 namespace YtTikDownloader.App.ViewModels;
@@ -78,6 +79,24 @@ public sealed class SettingsViewModel : ViewModelBase
         set { _settings.Current.PreferredVideoResolution = value; OnPropertyChanged(); Save(); }
     }
 
+    /// <summary>
+    /// "#AARRGGBB". The swatch preview in Settings binds to the app-level
+    /// AppAccentBrush resource (kept in sync by AccentColorService) rather
+    /// than to this string directly, so it updates the instant a new color
+    /// is picked.
+    /// </summary>
+    public string AccentColorHex
+    {
+        get => _settings.Current.AccentColorHex;
+        set
+        {
+            _settings.Current.AccentColorHex = value;
+            OnPropertyChanged();
+            Save();
+            AccentColorService.Apply(value);
+        }
+    }
+
     private string _ytDlpStatusText = "Checking...";
     public string YtDlpStatusText { get => _ytDlpStatusText; private set => SetField(ref _ytDlpStatusText, value); }
 
@@ -95,6 +114,8 @@ public sealed class SettingsViewModel : ViewModelBase
     public ICommand BrowseYouTubeMusicFolderCommand { get; }
     public ICommand DownloadOrUpdateToolsCommand { get; }
     public ICommand RefreshToolStatusCommand { get; }
+    public ICommand ChooseAccentColorCommand { get; }
+    public ICommand ResetAccentColorCommand { get; }
 
     public SettingsViewModel(SettingsService settings, YtDlpBinaryManager binaryManager, DownloadQueueManager queueManager)
     {
@@ -107,6 +128,8 @@ public sealed class SettingsViewModel : ViewModelBase
         BrowseYouTubeMusicFolderCommand = new RelayCommand(_ => BrowseFolder(v => YouTubeMusicOutputFolder = v));
         RefreshToolStatusCommand = new RelayCommand(_ => RefreshToolStatus());
         DownloadOrUpdateToolsCommand = new RelayCommand(async _ => await DownloadOrUpdateToolsAsync());
+        ChooseAccentColorCommand = new RelayCommand(_ => ChooseAccentColor());
+        ResetAccentColorCommand = new RelayCommand(_ => AccentColorHex = AccentColorService.DefaultHex);
 
         RefreshToolStatus();
     }
@@ -148,6 +171,31 @@ public sealed class SettingsViewModel : ViewModelBase
         var dialog = new OpenFolderDialog { Title = "Choose a download folder" };
         if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.FolderName))
             onSelected(dialog.FolderName);
+    }
+
+    /// <summary>
+    /// WPF has no built-in color-picker dialog, so this uses
+    /// System.Windows.Forms.ColorDialog -- part of the .NET Windows Desktop
+    /// runtime, not a NuGet package -- opened straight to its full
+    /// hue/saturation/luminosity picker so the user can choose literally
+    /// any color, not just a preset swatch.
+    /// </summary>
+    private void ChooseAccentColor()
+    {
+        var current = AccentColorService.ParseOrDefault(AccentColorHex);
+
+        using var dialog = new System.Windows.Forms.ColorDialog
+        {
+            Color = System.Drawing.Color.FromArgb(current.A, current.R, current.G, current.B),
+            AllowFullOpen = true,
+            FullOpen = true,
+        };
+
+        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            var c = dialog.Color;
+            AccentColorHex = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
+        }
     }
 
     private void Save() => _settings.Save();

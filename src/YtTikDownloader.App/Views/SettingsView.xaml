@@ -70,6 +70,21 @@
 
             <Separator Margin="0,10"/>
 
+            <TextBlock Text="Appearance" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
+            <TextBlock Text="Accent color (used for the download progress bar)" Margin="0,0,0,6"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <Border Width="32" Height="32" CornerRadius="4" BorderBrush="#FF3F3F46" BorderThickness="1"
+                        Background="{DynamicResource AppAccentBrush}"/>
+                <Button Content="Choose color..." Margin="10,0,0,0" Padding="12,4" VerticalAlignment="Center"
+                        Command="{Binding ChooseAccentColorCommand}"/>
+                <Button Content="Reset to default" Margin="8,0,0,0" Padding="12,4" VerticalAlignment="Center"
+                        Command="{Binding ResetAccentColorCommand}"/>
+            </StackPanel>
+            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#FFAAAAAA" Margin="0,0,0,10"
+                       Text="Standard buttons, checkboxes, and radio buttons follow Windows' own accent color setting; this only recolors parts the app draws itself, like the progress bar."/>
+
+            <Separator Margin="0,10"/>
+
             <TextBlock Text="yt-dlp / ffmpeg" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
             <TextBlock Text="{Binding YtDlpStatusText}" TextWrapping="Wrap" Margin="0,0,0,4"/>
             <TextBlock Text="{Binding FfmpegStatusText}" TextWrapping="Wrap" Margin="0,0,0,8"/>

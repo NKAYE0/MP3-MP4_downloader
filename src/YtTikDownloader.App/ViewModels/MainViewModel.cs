@@ -1,4 +1,5 @@
 using System.Windows.Input;
+using YtTikDownloader.App.Services;
 using YtTikDownloader.Core.Models;
 using YtTikDownloader.Core.Services;
 
@@ -53,6 +54,8 @@ public sealed class MainViewModel : ViewModelBase
         AppPaths.EnsureCoreFoldersExist();
 
         Settings = new SettingsService();
+        AccentColorService.Apply(Settings.Current.AccentColorHex);
+
         History = new HistoryRepository();
         Stats = new StatsService(History);
         BinaryManager = new YtDlpBinaryManager(Settings);

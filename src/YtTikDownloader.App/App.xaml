@@ -3,6 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ThemeMode="Dark">
     <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Custom CheckBox/RadioButton/TabItem templates that follow
+                     AppAccentBrush instead of Windows' system accent color. -->
+                <ResourceDictionary Source="Styles/AccentControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
 
+            <!-- Placeholder so any DynamicResource lookup always resolves to
+                 something, even for the instant before MainViewModel applies
+                 the user's actual saved choice via AccentColorService. -->
+            <SolidColorBrush x:Key="AppAccentBrush" Color="#FF4FC3F7"/>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -149,7 +149,7 @@
                                             <ColumnDefinition Width="{Binding ProgressPercent, Mode=OneWay, Converter={StaticResource PercentToGridLength}}"/>
                                             <ColumnDefinition Width="{Binding ProgressPercent, Mode=OneWay, Converter={StaticResource PercentToGridLength}, ConverterParameter=Remainder}"/>
                                         </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" Background="#FF4FC3F7" CornerRadius="2"/>
+                                        <Border Grid.Column="0" Background="{DynamicResource AppAccentBrush}" CornerRadius="2"/>
                                     </Grid>
                                 </Border>
 

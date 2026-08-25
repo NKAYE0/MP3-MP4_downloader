@@ -36,4 +36,14 @@ public sealed class AppSettings
 
     public string PreferredAudioQuality { get; set; } = "0"; // yt-dlp --audio-quality, 0 = best
     public string PreferredVideoResolution { get; set; } = "1080";
+
+    /// <summary>
+    /// The app's accent color (used for the download progress bar and other
+    /// Claude-drawn accents), as an "#AARRGGBB" hex string. This is
+    /// separate from Windows' own accent color: WPF's built-in Fluent theme
+    /// ties its native controls to the OS accent color and doesn't
+    /// currently support overriding that per-app, so this only recolors
+    /// the parts of the UI the app draws itself.
+    /// </summary>
+    public string AccentColorHex { get; set; } = "#FF4FC3F7";
 }
