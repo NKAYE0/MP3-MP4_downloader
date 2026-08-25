@@ -26,7 +26,7 @@ A feature-rich free, open-source media downloader with three dedicated sections:
 
 ## 🚀 Latest Release
 
-**[Download the latest release](#)**
+**[Download the latest release](https://github.com/NKAYE0/MP3-MP4_downloader/releases/latest/download/YtTikDownloader.exe)**
 
 Download, install, and start downloading your media.
 
