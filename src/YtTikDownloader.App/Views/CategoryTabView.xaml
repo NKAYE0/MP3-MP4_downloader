@@ -9,6 +9,7 @@
     <UserControl.Resources>
         <conv:NullToVisibilityConverter x:Key="NullToVisibility"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+        <conv:PercentToGridLengthConverter x:Key="PercentToGridLength"/>
     </UserControl.Resources>
 
     <Grid Margin="10">
@@ -135,9 +136,22 @@
                                     </TextBlock>
                                 </StackPanel>
 
-                                <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Height="14"
-                                             ClipToBounds="True"
-                                             Minimum="0" Maximum="100" Value="{Binding ProgressPercent, Mode=OneWay}"/>
+                                <!-- Hand-built progress bar (not the native WPF ProgressBar): the
+                                     Fluent theme's built-in ProgressBar indicator was rendering wider
+                                     than its own container regardless of Value, spilling out past the
+                                     card's edges. A Grid can only ever divide up the width it actually
+                                     has, so driving the fill through two star-sized columns makes that
+                                     kind of overflow structurally impossible. -->
+                                <Border Grid.Row="2" Grid.ColumnSpan="2" Height="14" CornerRadius="2"
+                                        Background="#FF2D2D30" ClipToBounds="True">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="{Binding ProgressPercent, Mode=OneWay, Converter={StaticResource PercentToGridLength}}"/>
+                                            <ColumnDefinition Width="{Binding ProgressPercent, Mode=OneWay, Converter={StaticResource PercentToGridLength}, ConverterParameter=Remainder}"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Background="#FF4FC3F7" CornerRadius="2"/>
+                                    </Grid>
+                                </Border>
 
                                 <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="0,4,0,0" Foreground="#FFFF6B6B"
                                            TextWrapping="Wrap"
