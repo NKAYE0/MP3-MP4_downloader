@@ -1,12 +1,10 @@
 # Media Downloader
 
-A free, open-source desktop application for downloading **YouTube, YouTube Music, and TikTok** videos and audio in MP3 or MP4 formats.
-
 > ⚠️ **Note:** This project is unofficial and is not affiliated with or endorsed by YouTube, YouTube Music, TikTok, or their respective owners.
 
 ## 🔎 What is this?
 
-A feature-rich media downloader with three dedicated sections:
+A feature-rich free, open-source media downloader with three dedicated sections:
 
 * ▶️ **YouTube** — Download videos, playlists, and thumbnails
 * 🎵 **YouTube Music** — Download songs, albums, playlists, and album artwork

@@ -9,8 +9,7 @@
 #   .\scripts\publish-release.ps1
 #
 # Output lands in .\publish\YtTikDownloader.exe (that folder is gitignored --
-# it's a build output, not something to commit). Upload that one .exe as the
-# release asset when you publish the GitHub release.
+# it's a build output.)
 
 $ErrorActionPreference = "Stop"
 
