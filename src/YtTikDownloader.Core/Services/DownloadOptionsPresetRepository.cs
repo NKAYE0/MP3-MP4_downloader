@@ -57,4 +57,44 @@ public sealed class DownloadOptionsPresetRepository
             JsonFileStore.Save(_path, _presets);
         }
     }
+
+    /// <summary>The preset (if any) marked as this category's startup default.</summary>
+    public DownloadOptionsPreset? GetDefault(MediaCategory category)
+    {
+        lock (_lock)
+        {
+            return _presets.FirstOrDefault(p => p.Category == category && p.IsDefault);
+        }
+    }
+
+    /// <summary>
+    /// Marks one preset as its category's default, clearing the flag from
+    /// any other preset in that same category -- only one default per
+    /// category makes sense, since it's what gets applied at app launch.
+    /// </summary>
+    public void SetDefault(string presetId)
+    {
+        lock (_lock)
+        {
+            var target = _presets.FirstOrDefault(p => p.Id == presetId);
+            if (target is null) return;
+
+            foreach (var preset in _presets.Where(p => p.Category == target.Category))
+                preset.IsDefault = preset.Id == presetId;
+
+            JsonFileStore.Save(_path, _presets);
+        }
+    }
+
+    /// <summary>Clears the default flag for every preset in a category (i.e. "no default").</summary>
+    public void ClearDefault(MediaCategory category)
+    {
+        lock (_lock)
+        {
+            foreach (var preset in _presets.Where(p => p.Category == category))
+                preset.IsDefault = false;
+
+            JsonFileStore.Save(_path, _presets);
+        }
+    }
 }

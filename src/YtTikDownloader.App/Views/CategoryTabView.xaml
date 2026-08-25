@@ -49,12 +49,15 @@
                     <TextBlock Grid.Column="0" Text="Download options" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                         <ComboBox Width="150" Margin="0,0,6,0"
-                                  ItemsSource="{Binding Presets}" DisplayMemberPath="Name"
+                                  ItemsSource="{Binding Presets}" DisplayMemberPath="DisplayName"
                                   SelectedItem="{Binding SelectedPreset}"
                                   ToolTip="Apply a saved preset"/>
                         <Button Content="Save as..." Padding="8,2" Margin="0,0,4,0"
                                 ToolTip="Save the current options above as a new preset"
                                 Command="{Binding SaveAsPresetCommand}"/>
+                        <Button Content="{Binding DefaultPresetButtonLabel}" Padding="8,2" Margin="0,0,4,0"
+                                ToolTip="Mark or unmark the selected preset as this tab's default, applied automatically the next time the app starts"
+                                Command="{Binding ToggleDefaultPresetCommand}"/>
                         <Button Content="Delete" Padding="8,2"
                                 ToolTip="Delete the selected preset"
                                 Command="{Binding DeleteSelectedPresetCommand}"/>

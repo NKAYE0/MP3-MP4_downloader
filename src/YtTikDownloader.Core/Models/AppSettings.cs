@@ -13,9 +13,24 @@ public sealed class AppSettings
     public DownloadFormat TikTokDefaultFormat { get; set; } = DownloadFormat.Mp4Video;
     public DownloadFormat YouTubeMusicDefaultFormat { get; set; } = DownloadFormat.Mp3Audio;
 
-    public bool WriteThumbnailByDefault { get; set; } = true;
-    public bool EmbedThumbnailByDefault { get; set; } = true;
-    public bool EmbedMetadataByDefault { get; set; } = true;
+    // Per-category "out of the box" option defaults (before the user has
+    // saved any presets). These are separate per category rather than one
+    // shared set of fields because the sensible defaults genuinely differ:
+    // e.g. TikTok and YouTube Music clips benefit from an embedded
+    // thumbnail/cover art by default, whereas YouTube videos already carry
+    // their own thumbnail in most players so embedding one is just wasted
+    // file size.
+    public bool YouTubeWriteThumbnailByDefault { get; set; } = false;
+    public bool YouTubeEmbedThumbnailByDefault { get; set; } = false;
+    public bool YouTubeEmbedMetadataByDefault { get; set; } = true;
+
+    public bool TikTokWriteThumbnailByDefault { get; set; } = false;
+    public bool TikTokEmbedThumbnailByDefault { get; set; } = true;
+    public bool TikTokEmbedMetadataByDefault { get; set; } = true;
+
+    public bool YouTubeMusicWriteThumbnailByDefault { get; set; } = false;
+    public bool YouTubeMusicEmbedThumbnailByDefault { get; set; } = true;
+    public bool YouTubeMusicEmbedMetadataByDefault { get; set; } = true;
 
     public bool SponsorBlockEnabledByDefault { get; set; } = false;
     public List<SponsorBlockCategory> DefaultSponsorBlockCategories { get; set; } = new()

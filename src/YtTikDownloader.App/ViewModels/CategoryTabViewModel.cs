@@ -64,7 +64,7 @@ public sealed class CategoryTabViewModel : ViewModelBase
     private bool _embedMetadata;
     public bool EmbedMetadata { get => _embedMetadata; set => SetField(ref _embedMetadata, value); }
 
-    private bool _downloadEntirePlaylist = true;
+    private bool _downloadEntirePlaylist = false;
     public bool DownloadEntirePlaylist { get => _downloadEntirePlaylist; set => SetField(ref _downloadEntirePlaylist, value); }
 
     private bool _sponsorBlockEnabled;
@@ -86,8 +86,12 @@ public sealed class CategoryTabViewModel : ViewModelBase
         {
             if (!SetField(ref _selectedPreset, value)) return;
             if (value is not null) ApplyPreset(value);
+            OnPropertyChanged(nameof(DefaultPresetButtonLabel));
         }
     }
+
+    /// <summary>Caption for the default-preset toggle button, reflecting the currently selected preset.</summary>
+    public string DefaultPresetButtonLabel => SelectedPreset?.IsDefault == true ? "Unset default" : "Set as default";
 
     public ICommand AddUrlCommand { get; }
     public ICommand CancelDownloadCommand { get; }
@@ -96,6 +100,7 @@ public sealed class CategoryTabViewModel : ViewModelBase
     public ICommand OpenFolderCommand { get; }
     public ICommand SaveAsPresetCommand { get; }
     public ICommand DeleteSelectedPresetCommand { get; }
+    public ICommand ToggleDefaultPresetCommand { get; }
 
     public CategoryTabViewModel(MediaCategory category, string tabTitle, MainViewModel owner)
     {
@@ -103,16 +108,38 @@ public sealed class CategoryTabViewModel : ViewModelBase
         TabTitle = tabTitle;
         _owner = owner;
 
-        _isMp4Selected = owner.Settings.DefaultFormatFor(category) == DownloadFormat.Mp4Video;
-        _isMp3Selected = !_isMp4Selected;
+        // A preset the user has marked as this category's default (see
+        // ToggleSelectedPresetDefault below) takes priority over the app's
+        // built-in per-category defaults from Settings.
+        var defaultPreset = owner.PresetRepository.GetDefault(category);
+        if (defaultPreset is not null)
+        {
+            _isMp4Selected = defaultPreset.Format == DownloadFormat.Mp4Video;
+            _isMp3Selected = !_isMp4Selected;
 
-        _writeThumbnail = owner.Settings.Current.WriteThumbnailByDefault;
-        _embedThumbnail = owner.Settings.Current.EmbedThumbnailByDefault;
-        _embedMetadata = owner.Settings.Current.EmbedMetadataByDefault;
-        _sponsorBlockEnabled = owner.Settings.Current.SponsorBlockEnabledByDefault;
+            _writeThumbnail = defaultPreset.WriteThumbnail;
+            _embedThumbnail = defaultPreset.EmbedThumbnail;
+            _embedMetadata = defaultPreset.EmbedMetadata;
+            _downloadEntirePlaylist = defaultPreset.DownloadEntirePlaylist;
+            _playlistItemsText = defaultPreset.PlaylistItemsText;
+            _sponsorBlockEnabled = defaultPreset.SponsorBlockEnabled;
 
-        SponsorBlockOptions = new ObservableCollection<SponsorBlockOption>(
-            SponsorBlockOption.CreateDefaultSet(owner.Settings.Current.DefaultSponsorBlockCategories));
+            SponsorBlockOptions = new ObservableCollection<SponsorBlockOption>(
+                SponsorBlockOption.CreateDefaultSet(defaultPreset.SponsorBlockCategories));
+        }
+        else
+        {
+            _isMp4Selected = owner.Settings.DefaultFormatFor(category) == DownloadFormat.Mp4Video;
+            _isMp3Selected = !_isMp4Selected;
+
+            _writeThumbnail = owner.Settings.WriteThumbnailDefaultFor(category);
+            _embedThumbnail = owner.Settings.EmbedThumbnailDefaultFor(category);
+            _embedMetadata = owner.Settings.EmbedMetadataDefaultFor(category);
+            _sponsorBlockEnabled = owner.Settings.Current.SponsorBlockEnabledByDefault;
+
+            SponsorBlockOptions = new ObservableCollection<SponsorBlockOption>(
+                SponsorBlockOption.CreateDefaultSet(owner.Settings.Current.DefaultSponsorBlockCategories));
+        }
 
         foreach (var task in owner.QueueManager.Queue)
             if (task.Request.Category == Category) FilteredQueue.Add(task);
@@ -134,8 +161,11 @@ public sealed class CategoryTabViewModel : ViewModelBase
         });
         SaveAsPresetCommand = new RelayCommand(_ => SaveAsPreset());
         DeleteSelectedPresetCommand = new RelayCommand(_ => DeleteSelectedPreset(), _ => SelectedPreset is not null);
+        ToggleDefaultPresetCommand = new RelayCommand(_ => ToggleSelectedPresetDefault(), _ => SelectedPreset is not null);
 
         RefreshPresets();
+        if (defaultPreset is not null)
+            _selectedPreset = Presets.FirstOrDefault(p => p.Id == defaultPreset.Id);
     }
 
     private void OnMasterQueueChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -225,8 +255,8 @@ public sealed class CategoryTabViewModel : ViewModelBase
         if (dialog.ShowDialog() != true) return;
 
         var name = dialog.InputText;
-        var overwriting = Presets.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
-        if (overwriting)
+        var existing = Presets.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
         {
             var confirm = MessageBox.Show(owner,
                 $"A preset named \"{name}\" already exists for {TabTitle}. Overwrite it?",
@@ -236,9 +266,7 @@ public sealed class CategoryTabViewModel : ViewModelBase
 
         var preset = new DownloadOptionsPreset
         {
-            Id = overwriting
-                ? Presets.First(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)).Id
-                : Guid.NewGuid().ToString("N"),
+            Id = existing?.Id ?? Guid.NewGuid().ToString("N"),
             Name = name,
             Category = Category,
             Format = IsMp3Selected ? DownloadFormat.Mp3Audio : DownloadFormat.Mp4Video,
@@ -248,12 +276,31 @@ public sealed class CategoryTabViewModel : ViewModelBase
             DownloadEntirePlaylist = DownloadEntirePlaylist,
             PlaylistItemsText = PlaylistItemsText,
             SponsorBlockEnabled = SponsorBlockEnabled,
-            SponsorBlockCategories = SponsorBlockOptions.Where(o => o.IsChecked).Select(o => o.Category).ToList()
+            SponsorBlockCategories = SponsorBlockOptions.Where(o => o.IsChecked).Select(o => o.Category).ToList(),
+            // Overwriting an existing preset keeps its default status --
+            // re-saving a preset shouldn't silently un-default it.
+            IsDefault = existing?.IsDefault ?? false
         };
 
         _owner.PresetRepository.Save(preset);
         RefreshPresets();
         SelectedPreset = Presets.FirstOrDefault(p => p.Id == preset.Id);
+    }
+
+    /// <summary>Marks/unmarks the selected preset as this category's startup default.</summary>
+    private void ToggleSelectedPresetDefault()
+    {
+        if (SelectedPreset is null) return;
+
+        var presetId = SelectedPreset.Id;
+        if (SelectedPreset.IsDefault)
+            _owner.PresetRepository.ClearDefault(Category);
+        else
+            _owner.PresetRepository.SetDefault(presetId);
+
+        RefreshPresets();
+        SelectedPreset = Presets.FirstOrDefault(p => p.Id == presetId);
+        OnPropertyChanged(nameof(DefaultPresetButtonLabel));
     }
 
     private void DeleteSelectedPreset()

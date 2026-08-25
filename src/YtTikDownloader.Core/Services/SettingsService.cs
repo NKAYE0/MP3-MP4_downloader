@@ -44,4 +44,28 @@ public sealed class SettingsService
         MediaCategory.YouTubeMusic => Current.YouTubeMusicDefaultFormat,
         _ => DownloadFormat.Mp4Video
     };
+
+    public bool WriteThumbnailDefaultFor(MediaCategory category) => category switch
+    {
+        MediaCategory.YouTube => Current.YouTubeWriteThumbnailByDefault,
+        MediaCategory.TikTok => Current.TikTokWriteThumbnailByDefault,
+        MediaCategory.YouTubeMusic => Current.YouTubeMusicWriteThumbnailByDefault,
+        _ => false
+    };
+
+    public bool EmbedThumbnailDefaultFor(MediaCategory category) => category switch
+    {
+        MediaCategory.YouTube => Current.YouTubeEmbedThumbnailByDefault,
+        MediaCategory.TikTok => Current.TikTokEmbedThumbnailByDefault,
+        MediaCategory.YouTubeMusic => Current.YouTubeMusicEmbedThumbnailByDefault,
+        _ => false
+    };
+
+    public bool EmbedMetadataDefaultFor(MediaCategory category) => category switch
+    {
+        MediaCategory.YouTube => Current.YouTubeEmbedMetadataByDefault,
+        MediaCategory.TikTok => Current.TikTokEmbedMetadataByDefault,
+        MediaCategory.YouTubeMusic => Current.YouTubeMusicEmbedMetadataByDefault,
+        _ => true
+    };
 }

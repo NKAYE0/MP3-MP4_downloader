@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace YtTikDownloader.Core.Models;
 
 /// <summary>
@@ -24,4 +26,16 @@ public sealed class DownloadOptionsPreset
     public string PlaylistItemsText { get; set; } = string.Empty;
     public bool SponsorBlockEnabled { get; set; }
     public List<SponsorBlockCategory> SponsorBlockCategories { get; set; } = new();
+
+    /// <summary>
+    /// When true, this preset's options are applied automatically to its
+    /// category tab every time the app starts, instead of the app's
+    /// built-in defaults. Only one preset per category can be the default
+    /// at a time -- DownloadOptionsPresetRepository enforces that.
+    /// </summary>
+    public bool IsDefault { get; set; }
+
+    /// <summary>How this preset is labeled in the dropdown. Not persisted -- purely a UI convenience.</summary>
+    [JsonIgnore]
+    public string DisplayName => IsDefault ? $"{Name} (default)" : Name;
 }
