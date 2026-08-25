@@ -4,6 +4,7 @@
         xmlns:views="clr-namespace:YtTikDownloader.App.Views"
         xmlns:conv="clr-namespace:YtTikDownloader.App.Converters"
         Title="YouTube / TikTok / YouTube Music Downloader"
+        Icon="/Assets/AppIcon.ico"
         Height="780" Width="1150" MinHeight="560" MinWidth="820">
 
     <Window.Resources>
