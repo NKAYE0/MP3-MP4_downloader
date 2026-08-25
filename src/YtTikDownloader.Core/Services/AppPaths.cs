@@ -14,6 +14,7 @@ public static class AppPaths
 
     public static string SettingsFile => Path.Combine(AppDataRoot, "settings.json");
     public static string HistoryFile => Path.Combine(AppDataRoot, "history.json");
+    public static string PresetsFile => Path.Combine(AppDataRoot, "presets.json");
     public static string ToolsFolder => Path.Combine(AppDataRoot, "tools");
     public static string YtDlpExePath => Path.Combine(ToolsFolder, "yt-dlp.exe");
     public static string FfmpegExePath => Path.Combine(ToolsFolder, "ffmpeg.exe");

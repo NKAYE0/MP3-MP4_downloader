@@ -18,6 +18,7 @@ public sealed class MainViewModel : ViewModelBase
     public StatsService Stats { get; }
     public YtDlpBinaryManager BinaryManager { get; }
     public DownloadQueueManager QueueManager { get; }
+    public DownloadOptionsPresetRepository PresetRepository { get; }
 
     public CategoryTabViewModel YouTubeTab { get; }
     public CategoryTabViewModel TikTokTab { get; }
@@ -58,6 +59,7 @@ public sealed class MainViewModel : ViewModelBase
 
         History = new HistoryRepository();
         Stats = new StatsService(History);
+        PresetRepository = new DownloadOptionsPresetRepository();
         BinaryManager = new YtDlpBinaryManager(Settings);
         var engine = new YtDlpDownloadEngine(BinaryManager);
         QueueManager = new DownloadQueueManager(engine, History, Settings);

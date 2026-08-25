@@ -39,7 +39,28 @@
         </Border>
 
         <!-- Options -->
-        <Expander Grid.Row="1" Header="Download options" IsExpanded="True" Margin="0,0,0,8">
+        <Expander Grid.Row="1" IsExpanded="True" Margin="0,0,0,8" HorizontalContentAlignment="Stretch">
+            <Expander.Header>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Download options" VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ComboBox Width="150" Margin="0,0,6,0"
+                                  ItemsSource="{Binding Presets}" DisplayMemberPath="Name"
+                                  SelectedItem="{Binding SelectedPreset}"
+                                  ToolTip="Apply a saved preset"/>
+                        <Button Content="Save as..." Padding="8,2" Margin="0,0,4,0"
+                                ToolTip="Save the current options above as a new preset"
+                                Command="{Binding SaveAsPresetCommand}"/>
+                        <Button Content="Delete" Padding="8,2"
+                                ToolTip="Delete the selected preset"
+                                Command="{Binding DeleteSelectedPresetCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </Expander.Header>
             <WrapPanel Margin="4">
                 <GroupBox Header="Format" Margin="0,4,16,4" Padding="6">
                     <StackPanel>

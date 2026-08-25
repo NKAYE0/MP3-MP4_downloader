@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
 using System.Windows.Input;
+using YtTikDownloader.App.Views;
 using YtTikDownloader.Core.Models;
 using YtTikDownloader.Core.Services;
 
@@ -72,11 +74,28 @@ public sealed class CategoryTabViewModel : ViewModelBase
     /// <summary>e.g. "1-10" to only grab the first 10 items of a playlist/album. Blank = all.</summary>
     public string PlaylistItemsText { get => _playlistItemsText; set => SetField(ref _playlistItemsText, value); }
 
+    /// <summary>This tab's saved presets only -- YouTube/TikTok/YouTube Music each keep a separate list.</summary>
+    public ObservableCollection<DownloadOptionsPreset> Presets { get; } = new();
+
+    private DownloadOptionsPreset? _selectedPreset;
+    /// <summary>Picking a preset from the dropdown applies its options immediately.</summary>
+    public DownloadOptionsPreset? SelectedPreset
+    {
+        get => _selectedPreset;
+        set
+        {
+            if (!SetField(ref _selectedPreset, value)) return;
+            if (value is not null) ApplyPreset(value);
+        }
+    }
+
     public ICommand AddUrlCommand { get; }
     public ICommand CancelDownloadCommand { get; }
     public ICommand RemoveDownloadCommand { get; }
     public ICommand PlayCommand { get; }
     public ICommand OpenFolderCommand { get; }
+    public ICommand SaveAsPresetCommand { get; }
+    public ICommand DeleteSelectedPresetCommand { get; }
 
     public CategoryTabViewModel(MediaCategory category, string tabTitle, MainViewModel owner)
     {
@@ -113,6 +132,10 @@ public sealed class CategoryTabViewModel : ViewModelBase
             if (param is DownloadTask { ResultFilePaths.Count: > 0 } t)
                 OpenContainingFolder(t.ResultFilePaths[0]);
         });
+        SaveAsPresetCommand = new RelayCommand(_ => SaveAsPreset());
+        DeleteSelectedPresetCommand = new RelayCommand(_ => DeleteSelectedPreset(), _ => SelectedPreset is not null);
+
+        RefreshPresets();
     }
 
     private void OnMasterQueueChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -168,6 +191,89 @@ public sealed class CategoryTabViewModel : ViewModelBase
         };
 
         _owner.QueueManager.Enqueue(request);
+    }
+
+    private void ApplyPreset(DownloadOptionsPreset preset)
+    {
+        IsMp4Selected = preset.Format == DownloadFormat.Mp4Video;
+        IsMp3Selected = !IsMp4Selected;
+        WriteThumbnail = preset.WriteThumbnail;
+        EmbedThumbnail = preset.EmbedThumbnail;
+        EmbedMetadata = preset.EmbedMetadata;
+        DownloadEntirePlaylist = preset.DownloadEntirePlaylist;
+        PlaylistItemsText = preset.PlaylistItemsText;
+        SponsorBlockEnabled = preset.SponsorBlockEnabled;
+
+        foreach (var option in SponsorBlockOptions)
+            option.IsChecked = preset.SponsorBlockCategories.Contains(option.Category);
+    }
+
+    private void SaveAsPreset()
+    {
+        // Non-null in practice: this only ever runs from a click inside an
+        // already-open category tab, by which point the main window
+        // obviously exists.
+        var owner = Application.Current.MainWindow!;
+        var dialog = new InputDialog(
+            "Save preset",
+            $"Save the current {TabTitle} download options as a preset:",
+            SelectedPreset?.Name ?? string.Empty)
+        {
+            Owner = owner
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        var name = dialog.InputText;
+        var overwriting = Presets.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (overwriting)
+        {
+            var confirm = MessageBox.Show(owner,
+                $"A preset named \"{name}\" already exists for {TabTitle}. Overwrite it?",
+                "Overwrite preset?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
+        }
+
+        var preset = new DownloadOptionsPreset
+        {
+            Id = overwriting
+                ? Presets.First(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)).Id
+                : Guid.NewGuid().ToString("N"),
+            Name = name,
+            Category = Category,
+            Format = IsMp3Selected ? DownloadFormat.Mp3Audio : DownloadFormat.Mp4Video,
+            WriteThumbnail = WriteThumbnail,
+            EmbedThumbnail = EmbedThumbnail,
+            EmbedMetadata = EmbedMetadata,
+            DownloadEntirePlaylist = DownloadEntirePlaylist,
+            PlaylistItemsText = PlaylistItemsText,
+            SponsorBlockEnabled = SponsorBlockEnabled,
+            SponsorBlockCategories = SponsorBlockOptions.Where(o => o.IsChecked).Select(o => o.Category).ToList()
+        };
+
+        _owner.PresetRepository.Save(preset);
+        RefreshPresets();
+        SelectedPreset = Presets.FirstOrDefault(p => p.Id == preset.Id);
+    }
+
+    private void DeleteSelectedPreset()
+    {
+        if (SelectedPreset is null) return;
+
+        var confirm = MessageBox.Show(Application.Current.MainWindow!,
+            $"Delete the preset \"{SelectedPreset.Name}\"?", "Delete preset?",
+            MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes) return;
+
+        _owner.PresetRepository.Delete(SelectedPreset.Id);
+        SelectedPreset = null;
+        RefreshPresets();
+    }
+
+    private void RefreshPresets()
+    {
+        Presets.Clear();
+        foreach (var preset in _owner.PresetRepository.GetFor(Category)) Presets.Add(preset);
     }
 
     private static void OpenContainingFolder(string filePath)
