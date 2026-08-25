@@ -58,6 +58,15 @@ public sealed class MainViewModel : ViewModelBase
         BinaryManager = new YtDlpBinaryManager(Settings);
         var engine = new YtDlpDownloadEngine(BinaryManager);
         QueueManager = new DownloadQueueManager(engine, History, Settings);
+
+        HistoryVm = new HistoryViewModel(History);
+        StatsVm = new StatsViewModel(Stats);
+        SettingsVm = new SettingsViewModel(Settings, BinaryManager, QueueManager);
+
+        // Subscribed after HistoryVm/StatsVm exist, since the handler
+        // references both (only ever invoked later, once a download
+        // finishes, but declaring it before they're assigned would leave
+        // the compiler unable to prove they're non-null at that point).
         QueueManager.TaskFinished += (_, entry) =>
         {
             StatusMessage = entry.Success
@@ -70,10 +79,6 @@ public sealed class MainViewModel : ViewModelBase
         YouTubeTab = new CategoryTabViewModel(MediaCategory.YouTube, "YouTube", this);
         TikTokTab = new CategoryTabViewModel(MediaCategory.TikTok, "TikTok", this);
         YouTubeMusicTab = new CategoryTabViewModel(MediaCategory.YouTubeMusic, "YouTube Music", this);
-
-        HistoryVm = new HistoryViewModel(History);
-        StatsVm = new StatsViewModel(Stats);
-        SettingsVm = new SettingsViewModel(Settings, BinaryManager, QueueManager);
 
         AddPendingClipboardUrlCommand = new RelayCommand(_ =>
         {

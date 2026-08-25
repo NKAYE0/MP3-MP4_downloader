@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading;
 using YtTikDownloader.Core.Models;
 
 namespace YtTikDownloader.Core.Services;
@@ -22,13 +23,16 @@ public sealed class YtDlpDownloadEngine
         _binaryManager = binaryManager;
     }
 
-    public async Task<HistoryEntry> RunAsync(DownloadTask task, string preferredAudioQuality, string preferredVideoResolution)
+    public async Task<HistoryEntry> RunAsync(DownloadTask task, SynchronizationContext? uiContext, string preferredAudioQuality, string preferredVideoResolution)
     {
         var ytDlpPath = _binaryManager.ResolveYtDlpPath();
         if (ytDlpPath is null)
         {
-            task.Status = DownloadStatus.Failed;
-            task.ErrorMessage = "yt-dlp.exe was not found. Go to Settings and click \"Download/Update tools\" first.";
+            RunOnUi(uiContext, () =>
+            {
+                task.Status = DownloadStatus.Failed;
+                task.ErrorMessage = "yt-dlp.exe was not found. Go to Settings and click \"Download/Update tools\" first.";
+            });
             return FailedEntry(task);
         }
 
@@ -41,7 +45,8 @@ public sealed class YtDlpDownloadEngine
             // need it, so warn loudly via the task's error slot without
             // failing yet -- yt-dlp itself will error out if it truly can't
             // proceed, and that message will surface via ErrorMessage below.
-            task.ErrorMessage = "Warning: ffmpeg.exe not found. Some options (mp3 conversion, thumbnail embedding, SponsorBlock) may fail.";
+            RunOnUi(uiContext, () =>
+                task.ErrorMessage = "Warning: ffmpeg.exe not found. Some options (mp3 conversion, thumbnail embedding, SponsorBlock) may fail.");
         }
 
         Directory.CreateDirectory(task.Request.OutputFolder);
@@ -65,12 +70,23 @@ public sealed class YtDlpDownloadEngine
         var ct = task.CancellationSource.Token;
         var itemsSeen = 0;
 
-        task.Status = DownloadStatus.FetchingInfo;
+        RunOnUi(uiContext, () => task.Status = DownloadStatus.FetchingInfo);
 
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data is null) return;
-            HandleStdOutLine(e.Data, task, resultPaths, ref itemsSeen);
+            var line = e.Data;
+
+            // These callbacks fire on a background I/O-completion thread,
+            // not the UI thread. Raising PropertyChanged (which the task's
+            // Status/ProgressPercent/etc. setters do) from a background
+            // thread is what caused the progress bar to sit still and then
+            // jump straight to "done" -- WPF's data binding only picks up
+            // cross-thread changes opportunistically, in batches, rather
+            // than rendering each one live. Marshaling each line's update
+            // onto the UI thread as it arrives is what makes the bar move
+            // smoothly again.
+            RunOnUi(uiContext, () => HandleStdOutLine(line, task, resultPaths, ref itemsSeen));
         };
         process.ErrorDataReceived += (_, e) =>
         {
@@ -91,33 +107,52 @@ public sealed class YtDlpDownloadEngine
             });
 
             await process.WaitForExitAsync(CancellationToken.None);
+
+            // HandleStdOutLine (above) is now dispatched onto the UI thread
+            // via RunOnUi instead of running inline, so a queued update for
+            // the very last output line -- in particular the DoneMarker
+            // line that appends the final file path to resultPaths -- can
+            // still be sitting in the UI thread's queue at the instant the
+            // process reports itself exited. Posting a no-op marker and
+            // awaiting it guarantees every update queued before this point
+            // has actually run before we read resultPaths/task state below.
+            await FlushUiQueueAsync(uiContext).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            task.Status = DownloadStatus.Failed;
-            task.ErrorMessage = $"Failed to run yt-dlp: {ex.Message}";
+            RunOnUi(uiContext, () =>
+            {
+                task.Status = DownloadStatus.Failed;
+                task.ErrorMessage = $"Failed to run yt-dlp: {ex.Message}";
+            });
             return FailedEntry(task);
         }
 
         if (ct.IsCancellationRequested)
         {
-            task.Status = DownloadStatus.Canceled;
+            RunOnUi(uiContext, () => task.Status = DownloadStatus.Canceled);
             return FailedEntry(task, "Canceled by user.");
         }
 
         if (process.ExitCode != 0 && resultPaths.Count == 0)
         {
-            task.Status = DownloadStatus.Failed;
             var tail = string.Join(Environment.NewLine, stderrLines.TakeLast(5));
-            task.ErrorMessage = string.IsNullOrWhiteSpace(tail)
-                ? $"yt-dlp exited with code {process.ExitCode}."
-                : tail;
+            RunOnUi(uiContext, () =>
+            {
+                task.Status = DownloadStatus.Failed;
+                task.ErrorMessage = string.IsNullOrWhiteSpace(tail)
+                    ? $"yt-dlp exited with code {process.ExitCode}."
+                    : tail;
+            });
             return FailedEntry(task);
         }
 
-        foreach (var p in resultPaths) task.ResultFilePaths.Add(p);
-        task.ProgressPercent = 100;
-        task.Status = DownloadStatus.Completed; // set last so HasResultFiles (re-announced on Status change) sees the populated list
+        RunOnUi(uiContext, () =>
+        {
+            foreach (var p in resultPaths) task.ResultFilePaths.Add(p);
+            task.ProgressPercent = 100;
+            task.Status = DownloadStatus.Completed; // set last so HasResultFiles (re-announced on Status change) sees the populated list
+        });
 
         long totalBytes = 0;
         foreach (var p in resultPaths)
@@ -176,7 +211,10 @@ public sealed class YtDlpDownloadEngine
         if (percentMatch.Success && double.TryParse(percentMatch.Groups[1].Value, out var pct))
         {
             task.Status = DownloadStatus.Downloading;
-            task.ProgressPercent = pct;
+            // Clamp defensively -- yt-dlp's own percentage text should
+            // never exceed 100, but a stray malformed line shouldn't be
+            // able to push the bound ProgressBar past its Maximum either.
+            task.ProgressPercent = Math.Clamp(pct, 0, 100);
 
             var speedMatch = SpeedRegex.Match(line);
             task.SpeedText = speedMatch.Success ? speedMatch.Groups[1].Value : task.SpeedText;
@@ -184,6 +222,33 @@ public sealed class YtDlpDownloadEngine
             var etaMatch = EtaRegex.Match(line);
             task.EtaText = etaMatch.Success ? etaMatch.Groups[1].Value : task.EtaText;
         }
+    }
+
+    /// <summary>
+    /// Runs <paramref name="action"/> on the given UI SynchronizationContext
+    /// if one was captured (queued via Post, so callers never block waiting
+    /// for the UI thread), or inline if not -- e.g. when the engine is
+    /// driven from a non-UI context such as a test.
+    /// </summary>
+    private static void RunOnUi(SynchronizationContext? uiContext, Action action)
+    {
+        if (uiContext is null) action();
+        else uiContext.Post(_ => action(), null);
+    }
+
+    /// <summary>
+    /// Waits for every RunOnUi update queued so far to have actually run.
+    /// SynchronizationContext.Post callbacks execute in the order they were
+    /// posted, so posting one more no-op and awaiting it is a reliable way
+    /// to know the queue has been drained up to this point.
+    /// </summary>
+    private static Task FlushUiQueueAsync(SynchronizationContext? uiContext)
+    {
+        if (uiContext is null) return Task.CompletedTask;
+
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        uiContext.Post(_ => tcs.TrySetResult(), null);
+        return tcs.Task;
     }
 
     private static HistoryEntry FailedEntry(DownloadTask task, string? overrideMessage = null) => new()

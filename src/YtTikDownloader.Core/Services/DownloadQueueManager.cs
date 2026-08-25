@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Threading;
 using YtTikDownloader.Core.Models;
 
 namespace YtTikDownloader.Core.Services;
@@ -39,7 +40,14 @@ public sealed class DownloadQueueManager
     {
         var task = new DownloadTask { Request = request, Title = request.Url };
         Queue.Insert(0, task);
-        _ = RunTaskAsync(task);
+
+        // Captured here, on whatever thread called Enqueue -- normally the
+        // UI thread, since this is invoked directly from a button command.
+        // yt-dlp's progress updates arrive on background threads later, and
+        // this context is what lets them be marshaled back to the UI
+        // thread safely (see RunTaskAsync / YtDlpDownloadEngine).
+        var uiContext = SynchronizationContext.Current;
+        _ = RunTaskAsync(task, uiContext);
         return task;
     }
 
@@ -55,7 +63,7 @@ public sealed class DownloadQueueManager
         Queue.Remove(task);
     }
 
-    private async Task RunTaskAsync(DownloadTask task)
+    private async Task RunTaskAsync(DownloadTask task, SynchronizationContext? uiContext)
     {
         // Capture the current gate instance up front: if the user changes
         // the concurrency setting (which swaps in a brand new
@@ -70,7 +78,7 @@ public sealed class DownloadQueueManager
         }
         catch (OperationCanceledException)
         {
-            task.Status = DownloadStatus.Canceled;
+            SetStatus(uiContext, task, DownloadStatus.Canceled);
             return;
         }
 
@@ -78,15 +86,30 @@ public sealed class DownloadQueueManager
         {
             var entry = await _engine.RunAsync(
                 task,
+                uiContext,
                 _settings.Current.PreferredAudioQuality,
                 _settings.Current.PreferredVideoResolution).ConfigureAwait(false);
 
             _history.Add(entry);
-            TaskFinished?.Invoke(task, entry);
+
+            // TaskFinished's subscribers (MainViewModel) touch UI-bound
+            // state -- including ObservableCollections on the History and
+            // Stats tabs, which WPF does not allow updating off the UI
+            // thread -- so this has to be marshaled just like the engine's
+            // own progress updates rather than invoked from whatever
+            // background thread the download just finished on.
+            if (uiContext is null) TaskFinished?.Invoke(task, entry);
+            else uiContext.Post(_ => TaskFinished?.Invoke(task, entry), null);
         }
         finally
         {
             gate.Release();
         }
+    }
+
+    private static void SetStatus(SynchronizationContext? uiContext, DownloadTask task, DownloadStatus status)
+    {
+        if (uiContext is null) task.Status = status;
+        else uiContext.Post(_ => task.Status = status, null);
     }
 }

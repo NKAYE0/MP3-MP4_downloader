@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <!-- URL input -->
-        <Border Grid.Row="0" BorderBrush="#FFCCCCCC" BorderThickness="1" Padding="8" CornerRadius="4" Margin="0,0,0,8">
+        <Border Grid.Row="0" BorderBrush="#FF3F3F46" BorderThickness="1" Padding="8" CornerRadius="4" Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -85,11 +85,11 @@
         </Expander>
 
         <!-- Queue -->
-        <Border Grid.Row="2" BorderBrush="#FFCCCCCC" BorderThickness="1" CornerRadius="4">
+        <Border Grid.Row="2" BorderBrush="#FF3F3F46" BorderThickness="1" CornerRadius="4">
             <ListBox ItemsSource="{Binding FilteredQueue}" BorderThickness="0" Padding="4">
                 <ListBox.ItemTemplate>
                     <DataTemplate DataType="{x:Type models:DownloadTask}">
-                        <Border BorderBrush="#FFE0E0E0" BorderThickness="0,0,0,1" Padding="6" Margin="0,2">
+                        <Border BorderBrush="#FF2D2D30" BorderThickness="0,0,0,1" Padding="6" Margin="0,2">
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -136,9 +136,10 @@
                                 </StackPanel>
 
                                 <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Height="14"
+                                             ClipToBounds="True"
                                              Minimum="0" Maximum="100" Value="{Binding ProgressPercent, Mode=OneWay}"/>
 
-                                <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="0,4,0,0" Foreground="Red"
+                                <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Margin="0,4,0,0" Foreground="#FFFF6B6B"
                                            TextWrapping="Wrap"
                                            Text="{Binding ErrorMessage}"
                                            Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibility}}"/>

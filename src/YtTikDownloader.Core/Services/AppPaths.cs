@@ -17,6 +17,7 @@ public static class AppPaths
     public static string ToolsFolder => Path.Combine(AppDataRoot, "tools");
     public static string YtDlpExePath => Path.Combine(ToolsFolder, "yt-dlp.exe");
     public static string FfmpegExePath => Path.Combine(ToolsFolder, "ffmpeg.exe");
+    public static string FfprobeExePath => Path.Combine(ToolsFolder, "ffprobe.exe");
 
     public static string DefaultDownloadsRoot { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),

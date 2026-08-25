@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.Windows.Input;
 using YtTikDownloader.Core.Models;
 using YtTikDownloader.Core.Services;

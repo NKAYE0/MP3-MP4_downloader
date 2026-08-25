@@ -56,8 +56,21 @@ public static class YtDlpArgumentBuilder
         }
         else
         {
+            // Prefer merging with an m4a (AAC) audio track over the plain
+            // "bv*+ba" fallback: YouTube's overall-best audio is very often
+            // an Opus/webm stream, and when that gets muxed straight into
+            // an .mp4 container (no re-encode, just remuxed) the file is
+            // technically valid but a lot of players -- including Windows'
+            // built-in ones and WPF's own MediaElement -- can't decode
+            // Opus, so the video plays back with no sound even though the
+            // download itself succeeded. AAC/m4a audio is universally
+            // compatible with mp4, and YouTube publishes an m4a audio
+            // track for virtually every video, so this costs nothing in
+            // practice while fixing silent playback. The plain "bv*+ba"
+            // and single-file "b" selectors remain as fallbacks for
+            // sources (e.g. some TikTok links) that don't offer m4a audio.
             args.Add("-f");
-            args.Add("bv*+ba/b");
+            args.Add("bv*+ba[ext=m4a]/bv*+ba/b");
             args.Add("--merge-output-format");
             args.Add("mp4");
             if (!string.IsNullOrWhiteSpace(preferredVideoResolution))

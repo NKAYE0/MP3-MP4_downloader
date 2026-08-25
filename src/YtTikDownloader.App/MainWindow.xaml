@@ -15,8 +15,8 @@
 
         <!-- Clipboard-detected URL banner -->
         <Border DockPanel.Dock="Top"
-                Background="#FFEFF6FF"
-                BorderBrush="#FFB6D4FE"
+                Background="#FF1F2D3D"
+                BorderBrush="#FF3A5C7D"
                 BorderThickness="0,0,0,1"
                 Padding="10,6"
                 Visibility="{Binding PendingClipboardUrl, Converter={StaticResource NullToVisibility}}">
@@ -44,7 +44,7 @@
             </StatusBarItem>
         </StatusBar>
 
-        <TabControl x:Name="MainTabControl" Margin="4">
+        <TabControl x:Name="MainTabControl" Margin="4" SelectionChanged="OnTabControlSelectionChanged">
             <TabItem Header="YouTube">
                 <views:CategoryTabView DataContext="{Binding YouTubeTab}"/>
             </TabItem>
@@ -55,7 +55,13 @@
                 <views:CategoryTabView DataContext="{Binding YouTubeMusicTab}"/>
             </TabItem>
             <TabItem x:Name="PlayerTabItem" Header="Player">
-                <views:PlayerView x:Name="PlayerViewControl"/>
+                <!-- PlayerView (which hosts a MediaElement) is constructed lazily in
+                     code-behind rather than declared here. MediaElement's construction
+                     depends on Windows Media Player components being present on the
+                     system, which isn't guaranteed on every Windows install; if it's
+                     missing, that failure should only take out the Player tab, not the
+                     whole app on startup. -->
+                <ContentControl x:Name="PlayerTabHost"/>
             </TabItem>
             <TabItem Header="History">
                 <views:HistoryView DataContext="{Binding HistoryVm}"/>

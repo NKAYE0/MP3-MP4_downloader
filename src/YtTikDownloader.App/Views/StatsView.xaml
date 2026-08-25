@@ -6,7 +6,7 @@
         <Style TargetType="TextBlock" x:Key="StatLabel">
             <Setter Property="Margin" Value="0,0,10,10"/>
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="#FF555555"/>
+            <Setter Property="Foreground" Value="#FFAAAAAA"/>
         </Style>
         <Style TargetType="TextBlock" x:Key="StatValue">
             <Setter Property="Margin" Value="0,0,0,10"/>

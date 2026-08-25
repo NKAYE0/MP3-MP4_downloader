@@ -78,7 +78,7 @@
                         IsEnabled="{Binding IsUpdatingTools, Converter={StaticResource InverseBoolean}}"/>
                 <Button Content="Refresh status" Margin="8,0,0,0" Padding="12,4" Command="{Binding RefreshToolStatusCommand}"/>
             </StackPanel>
-            <TextBlock Text="{Binding ToolsUpdateMessage}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="#FF2E7D32"/>
+            <TextBlock Text="{Binding ToolsUpdateMessage}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="#FF6FCF7A"/>
 
         </StackPanel>
     </ScrollViewer>

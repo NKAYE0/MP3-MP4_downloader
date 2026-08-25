@@ -111,6 +111,18 @@ public sealed class YtDlpBinaryManager
 
         File.Copy(ffmpegExe, AppPaths.FfmpegExePath, overwrite: true);
 
+        // ffprobe.exe ships alongside ffmpeg.exe in the same BtbN build and
+        // yt-dlp looks for it right next to ffmpeg when given a directory
+        // via --ffmpeg-location. yt-dlp can limp along without it for a
+        // plain merge, but several postprocessing steps (format probing,
+        // some thumbnail-embed checks) use it, so we copy it too whenever
+        // the archive has one.
+        var ffprobeExe = Directory.GetFiles(extractDir, "ffprobe.exe", SearchOption.AllDirectories).FirstOrDefault();
+        if (ffprobeExe is not null)
+        {
+            File.Copy(ffprobeExe, AppPaths.FfprobeExePath, overwrite: true);
+        }
+
         // Best-effort cleanup; failure to delete temp files isn't fatal.
         try { File.Delete(tempZipPath); } catch (IOException) { }
         try { Directory.Delete(extractDir, recursive: true); } catch (IOException) { }
