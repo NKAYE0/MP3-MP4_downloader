@@ -16,6 +16,10 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>YtTikDownloader</AssemblyName>
     <RootNamespace>YtTikDownloader.App</RootNamespace>
+    <!-- Shown in the .exe's own file properties (right-click > Properties >
+         Details) and matches the v1.01 GitHub release tag. -->
+    <Version>1.01</Version>
+    <Product>YT / TikTok / YouTube Music Downloader</Product>
     <!-- Sets the .exe's own icon (Explorer, taskbar, Alt-Tab). The same
          file is also embedded as a WPF Resource below and pointed to from
          MainWindow.xaml's Icon property, since those two are separate
