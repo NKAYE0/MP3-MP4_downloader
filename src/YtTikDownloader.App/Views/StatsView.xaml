@@ -4,74 +4,117 @@
 
     <UserControl.Resources>
         <Style TargetType="TextBlock" x:Key="StatLabel">
-            <Setter Property="Margin" Value="0,0,10,10"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="Foreground" Value="#FFAAAAAA"/>
         </Style>
         <Style TargetType="TextBlock" x:Key="StatValue">
-            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
             <Setter Property="FontSize" Value="22"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
+        <Style TargetType="TextBlock" x:Key="SectionHeader">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#FFAAAAAA"/>
+            <Setter Property="Margin" Value="0,18,0,8"/>
+        </Style>
+        <!-- Fixed-width card so tiles line up in neat rows instead of each
+             stretching to fill whatever space is left in the window. -->
+        <Style x:Key="StatCard" TargetType="Border">
+            <Setter Property="Width" Value="150"/>
+            <Setter Property="BorderBrush" Value="#FF3F3F46"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="0,0,10,10"/>
+        </Style>
     </UserControl.Resources>
 
-    <DockPanel Margin="16">
-        <Button DockPanel.Dock="Top" HorizontalAlignment="Right" Content="Refresh" Padding="12,4" Margin="0,0,0,12"
-                Command="{Binding RefreshCommand}"/>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16" MaxWidth="700" HorizontalAlignment="Left">
 
-        <UniformGrid Columns="4" DockPanel.Dock="Top">
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Total downloads" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding TotalDownloads}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Successful" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding SuccessfulDownloads}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Failed" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding FailedDownloads}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Total size on disk" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding TotalSizeText}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-        </UniformGrid>
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Refresh" Padding="12,4" Command="{Binding RefreshCommand}"/>
+                <TextBlock Text="Download statistics" FontWeight="Bold" FontSize="17" VerticalAlignment="Center"/>
+            </DockPanel>
 
-        <TextBlock DockPanel.Dock="Top" Text="By category" FontWeight="SemiBold" Margin="0,10,0,6"/>
-        <UniformGrid Columns="3" DockPanel.Dock="Top">
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="YouTube" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding YouTubeCount}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="TikTok" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding TikTokCount}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="YouTube Music" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding YouTubeMusicCount}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-        </UniformGrid>
+            <WrapPanel Margin="0,16,0,0">
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Total downloads" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding TotalDownloads}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Successful" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding SuccessfulDownloads}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Failed" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding FailedDownloads}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Total size on disk" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding TotalSizeText}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
 
-        <TextBlock DockPanel.Dock="Top" Text="By format" FontWeight="SemiBold" Margin="0,10,0,6"/>
-        <UniformGrid Columns="4" DockPanel.Dock="Top">
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Video (MP4)" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding VideoDownloads}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Audio (MP3)" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding AudioDownloads}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="SponsorBlock applied" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding SponsorBlockAppliedCount}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-            <StackPanel Margin="0,0,20,0">
-                <TextBlock Text="Last 30 days" Style="{StaticResource StatLabel}"/>
-                <TextBlock Text="{Binding Last30DaysTotal}" Style="{StaticResource StatValue}"/>
-            </StackPanel>
-        </UniformGrid>
-    </DockPanel>
+            <TextBlock Text="By category" Style="{StaticResource SectionHeader}"/>
+            <WrapPanel>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="YouTube" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding YouTubeCount}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="TikTok" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding TikTokCount}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="YouTube Music" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding YouTubeMusicCount}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <TextBlock Text="By format" Style="{StaticResource SectionHeader}"/>
+            <WrapPanel>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Video (MP4)" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding VideoDownloads}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Audio (MP3)" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding AudioDownloads}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="SponsorBlock applied" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding SponsorBlockAppliedCount}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}">
+                    <StackPanel>
+                        <TextBlock Text="Last 30 days" Style="{StaticResource StatLabel}"/>
+                        <TextBlock Text="{Binding Last30DaysTotal}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
