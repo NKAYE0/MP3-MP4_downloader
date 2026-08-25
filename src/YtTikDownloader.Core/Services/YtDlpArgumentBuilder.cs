@@ -92,11 +92,20 @@ public static class YtDlpArgumentBuilder
 
         // Output template: group playlist/album downloads into a subfolder
         // named after the playlist so tracks don't scatter loose into the
-        // category folder.
-        var fileNamePart = "%(title)s [%(id)s].%(ext)s";
+        // category folder. Playlist/album files also get their position
+        // number prefixed onto the filename, zero-padded to 3 digits
+        // (e.g. "001 - Song Title [id].mp3") -- Explorer's default view
+        // sorts by filename, and %(title)s alone sorts alphabetically,
+        // which has nothing to do with track order, so an album would
+        // otherwise land on disk in the wrong listening order. A lone,
+        // non-playlist download keeps the plain title-only name: there's
+        // no order to preserve for a single file.
+        var singleFileName = "%(title)s [%(id)s].%(ext)s";
+        var playlistFileName = "%(playlist_index)03d - %(title)s [%(id)s].%(ext)s";
+
         var outputTemplate = isPlaylistLike && request.DownloadEntirePlaylist
-            ? Path.Combine(request.OutputFolder, "%(playlist_title,title)s", fileNamePart)
-            : Path.Combine(request.OutputFolder, fileNamePart);
+            ? Path.Combine(request.OutputFolder, "%(playlist_title,title)s", playlistFileName)
+            : Path.Combine(request.OutputFolder, singleFileName);
 
         args.Add("-o");
         args.Add(outputTemplate);
